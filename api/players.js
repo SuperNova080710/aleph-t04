@@ -125,28 +125,17 @@ async function supabaseRequest(path, options = {}) {
 }
 
 async function upsertRecord(record) {
-  const res = await supabaseRequest(
-    'daily_records?on_conflict=appid,record_date',
-    {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates,return=representation',
-      body: JSON.stringify(record)
-    }
-  );
-
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
-  }
-
+  const res = await supabaseRequest('daily_records?on_conflict=appid,record_date', {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=minimal',
+    body: JSON.stringify(record)
+  });
   if (!res.ok) {
-    console.error('Supabase upsert 실패:', res.status, data);
-    return { ok: false, status: res.status, error: data };
+    const text = await res.text();
+    console.error('Supabase upsert 실패:', res.status, text);
+    return false;
   }
-  return { ok: true, data };
+  return true;
 }
 
 async function getRecords(dates) {
@@ -205,20 +194,16 @@ export default async function handler(req, res) {
     let saved = false;
 
     // 성공일 때만 저장 (데모용 signal로 저장)
-    let saved = false;
-    let saveResult = null;
-    
     if (judgment.ok && fixture.payload) {
       const p = fixture.payload;
-      saveResult = await upsertRecord({
-        appid: 0,
+      saved = await upsertRecord({
+        appid: 0, // 데모용
         game_name: 'ALEPH Demo Index',
         record_date: p.record_date,
-        player_count: Number(p.normalized_value),
+        player_count: p.normalized_value,
         source: p.source_name || 'ALEPH replay',
         source_time: p.source_time || queriedAt
       });
-      saved = saveResult.ok;
     }
 
     // 현재 저장된 기록 조회
@@ -237,7 +222,6 @@ export default async function handler(req, res) {
       freshness: judgment.ok ? 'fresh' : 'stale',
       error_code: judgment.error_code,
       saved,
-      saveResult,          // ← 추가
       payload: fixture.payload,
       expected: fixture.expected,
       records
