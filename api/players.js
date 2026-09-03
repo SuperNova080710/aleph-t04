@@ -206,20 +206,20 @@ export default async function handler(req, res) {
 
     // 성공일 때만 저장 (데모용 signal로 저장)
     let saved = false;
-let saveResult = null;
-
-if (judgment.ok && fixture.payload) {
-  const p = fixture.payload;
-  saveResult = await upsertRecord({
-    appid: 0,
-    game_name: 'ALEPH Demo Index',
-    record_date: p.record_date,
-    player_count: Number(p.normalized_value),
-    source: p.source_name || 'ALEPH replay',
-    source_time: p.source_time || queriedAt
-  });
-  saved = saveResult.ok;
-}
+    let saveResult = null;
+    
+    if (judgment.ok && fixture.payload) {
+      const p = fixture.payload;
+      saveResult = await upsertRecord({
+        appid: 0,
+        game_name: 'ALEPH Demo Index',
+        record_date: p.record_date,
+        player_count: Number(p.normalized_value),
+        source: p.source_name || 'ALEPH replay',
+        source_time: p.source_time || queriedAt
+      });
+      saved = saveResult.ok;
+    }
 
     // 현재 저장된 기록 조회
     const yesterday = new Date();
@@ -230,18 +230,18 @@ if (judgment.ok && fixture.payload) {
     ]);
 
     return res.status(200).json({
-  mode: 'replay',
-  fixture_id: fixtureId,
-  timezone: 'Asia/Seoul',
-  queriedAt,
-  freshness: judgment.ok ? 'fresh' : 'stale',
-  error_code: judgment.error_code,
-  saved,
-  saveResult,          // ← 추가
-  payload: fixture.payload,
-  expected: fixture.expected,
-  records
-});
+      mode: 'replay',
+      fixture_id: fixtureId,
+      timezone: 'Asia/Seoul',
+      queriedAt,
+      freshness: judgment.ok ? 'fresh' : 'stale',
+      error_code: judgment.error_code,
+      saved,
+      saveResult,          // ← 추가
+      payload: fixture.payload,
+      expected: fixture.expected,
+      records
+    });
   }
 
   // ---------- Live 모드 (실제 스팀) ----------
