@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>오늘의 진짜 정보판 - 스팀 동접자</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .value { font-size: 28px; font-weight: bold; }
+    .meta { color: #555; font-size: 14px; margin-top: 8px; line-height: 1.6; }
+    .error { color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>오늘의 스팀 동접자 정보판</h1>
+  <p>기준 시간대: <strong>Asia/Seoul</strong></p>
+  <div id="board">불러오는 중...</div>
+
+  <script>
+    const GAME_NAMES = {
+      1623730: "팰월드",
+      3240220: "GTA V Enhanced",
+      578080: "PUBG"
+    };
+
+    async function load() {
+      const board = document.getElementById("board");
+      try {
+        const res = await fetch("/api/players");
+        if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+        const data = await res.json();
+
+        const queryTime = new Date(data.queriedAt).toLocaleString("ko-KR", {
+          timeZone: "Asia/Seoul"
+        });
+
+        board.innerHTML = "";
+        data.games.forEach(g => {
+          const name = GAME_NAMES[g.appid] || g.appid;
+          const div = document.createElement("div");
+          div.className = "card";
+
+          if (!g.ok) {
+            div.innerHTML = `
+              <h2>${name}</h2>
+              <p class="error">조회 실패 (status: ${g.status})</p>
+            `;
+          } else {
+            div.innerHTML = `
+              <h2>${name}</h2>
+              <div class="value">${g.player_count.toLocaleString()} <small>명</small></div>
+              <div class="meta">
+                출처: Steam Web API (AppID ${g.appid})<br>
+                출처 시각: ${queryTime} <small>(원천 시각 미제공 → 조회 시각 사용)</small><br>
+                조회 시각: ${queryTime}<br>
+                기준 시간대: Asia/Seoul
+              </div>
+            `;
+          }
+          board.appendChild(div);
+
+          // 카드 1 확인용
+          console.log(`[${name}] 원자료:`, g.raw);
+          console.log(`[${name}] 화면값:`, g.player_count);
+        });
+      } catch (err) {
+        board.innerHTML = `<p class="error">오류: ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
