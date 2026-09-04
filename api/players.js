@@ -125,17 +125,28 @@ async function supabaseRequest(path, options = {}) {
 }
 
 async function upsertRecord(record) {
-  const res = await supabaseRequest('daily_records?on_conflict=appid,record_date', {
-    method: 'POST',
-    prefer: 'resolution=merge-duplicates,return=minimal',
-    body: JSON.stringify(record)
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    console.error('Supabase upsert 실패:', res.status, text);
-    return false;
+  const res = await supabaseRequest(
+    'daily_records?on_conflict=appid,record_date',
+    {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=representation',
+      body: JSON.stringify(record)
+    }
+  );
+
+  const text = await res.text();
+  let body = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = text;
   }
-  return true;
+
+  if (!res.ok) {
+    console.error('Supabase upsert 실패:', res.status, body);
+    return { ok: false, status: res.status, error: body };
+  }
+  return { ok: true, data: body };
 }
 
 async function getRecords(dates) {
@@ -194,17 +205,21 @@ export default async function handler(req, res) {
     let saved = false;
 
     // 성공일 때만 저장 (데모용 signal로 저장)
-    if (judgment.ok && fixture.payload) {
-      const p = fixture.payload;
-      saved = await upsertRecord({
-        appid: 0, // 데모용
-        game_name: 'ALEPH Demo Index',
-        record_date: p.record_date,
-        player_count: p.normalized_value,
-        source: p.source_name || 'ALEPH replay',
-        source_time: p.source_time || queriedAt
-      });
-    }
+    let saved = false;
+let saveResult = null;
+
+if (judgment.ok && fixture.payload) {
+  const p = fixture.payload;
+  saveResult = await upsertRecord({
+    appid: 0,
+    game_name: 'ALEPH Demo Index',
+    record_date: p.record_date,
+    player_count: Number(p.normalized_value),
+    source: p.source_name || 'ALEPH replay',
+    source_time: p.source_time || queriedAt
+  });
+  saved = saveResult.ok === true;
+}
 
     // 현재 저장된 기록 조회
     const yesterday = new Date();
