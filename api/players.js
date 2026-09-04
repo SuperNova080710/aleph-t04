@@ -237,6 +237,7 @@ if (judgment.ok && fixture.payload) {
       freshness: judgment.ok ? 'fresh' : 'stale',
       error_code: judgment.error_code,
       saved,
+      saveResult,
       payload: fixture.payload,
       expected: fixture.expected,
       records
