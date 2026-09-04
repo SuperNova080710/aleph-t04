@@ -156,101 +156,127 @@
     <div id="board">불러오는 중...</div>
   </div>
 
-  <script>
-    const GAME_NAMES = {
-      1623730: "팰월드",
-      3240220: "GTA V Enhanced",
-      578080: "PUBG"
-    };
+<script>
+  const GAME_NAMES = {
+    1623730: "팰월드",
+    3240220: "GTA V Enhanced",
+    578080: "PUBG"
+  };
 
-    function findLastRecord(records, appid) {
-      if (!Array.isArray(records)) return null;
-      return records.find(r => Number(r.appid) === Number(appid)) || null;
+  function findRecord(records, appid, date) {
+    if (!Array.isArray(records)) return null;
+    return records.find(
+      r => Number(r.appid) === Number(appid) && r.record_date === date
+    ) || null;
+  }
+
+  function statusLabel(freshness, errorCode) {
+    if (freshness === 'fresh' && errorCode === 'none') {
+      return { text: '정상 · fresh', cls: 'fresh' };
     }
+    if (freshness === 'stale') {
+      const code = errorCode && errorCode !== 'none' ? errorCode : 'stale';
+      return { text: `오래된 값 · ${code}`, cls: 'stale' };
+    }
+    return { text: `실패 · ${errorCode || 'error'}`, cls: 'error' };
+  }
 
-    function statusLabel(freshness, errorCode) {
-      if (freshness === 'fresh' && errorCode === 'none') return { text: '정상 · fresh', cls: 'fresh' };
-      if (freshness === 'stale') {
-        const code = errorCode && errorCode !== 'none' ? errorCode : 'stale';
-        return { text: `오래된 값 · ${code}`, cls: 'stale' };
+  function formatDelta(todayCount, yesterdayCount) {
+    if (todayCount == null || yesterdayCount == null) return null;
+    const delta = Number(todayCount) - Number(yesterdayCount);
+    const sign = delta > 0 ? '+' : '';
+    return `${sign}${delta.toLocaleString()}명`;
+  }
+
+  async function load() {
+    const board = document.getElementById("board");
+    board.innerHTML = "불러오는 중...";
+
+    try {
+      const res = await fetch("/api/players");
+      if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+      const data = await res.json();
+
+      const queryTime = new Date(data.queriedAt).toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul"
+      });
+
+      const today = data.today;
+      // API가 yesterday를 안 내려주면 오늘 기준 하루 전 계산
+      let yesterday = data.yesterday;
+      if (!yesterday && today) {
+        const d = new Date(today + 'T12:00:00+09:00');
+        d.setDate(d.getDate() - 1);
+        yesterday = d.toISOString().slice(0, 10);
       }
-      return { text: `실패 · ${errorCode || 'error'}`, cls: 'error' };
-    }
 
-    async function load() {
-      const board = document.getElementById("board");
-      board.innerHTML = "불러오는 중...";
+      board.innerHTML = "";
 
-      try {
-        const res = await fetch("/api/players");
-        if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
-        const data = await res.json();
+      data.games.forEach(g => {
+        const name = GAME_NAMES[g.appid] || g.name || g.appid;
 
-        const queryTime = new Date(data.queriedAt).toLocaleString("ko-KR", {
-          timeZone: "Asia/Seoul"
-        });
+        const todayRec = findRecord(data.records, g.appid, today);
+        const ydayRec = findRecord(data.records, g.appid, yesterday);
 
-        board.innerHTML = "";
+        const displayCount = (g.ok && g.player_count != null)
+          ? g.player_count
+          : (todayRec ? todayRec.player_count : null);
 
-        data.games.forEach(g => {
-          const name = GAME_NAMES[g.appid] || g.name || g.appid;
-          const last = findLastRecord(data.records, g.appid);
+        const ydayCount = ydayRec ? ydayRec.player_count : null;
+        const deltaText = formatDelta(displayCount, ydayCount);
 
-          // 실패 시에도 마지막 정상값이 있으면 보여 줌 (stale)
-          const displayCount = g.ok && g.player_count != null
-            ? g.player_count
-            : (last ? last.player_count : null);
+        const freshness = g.freshness || (g.ok ? 'fresh' : 'stale');
+        const errorCode = g.error_code || (g.ok ? 'none' : 'fetch_error');
+        const badge = statusLabel(freshness, errorCode);
+        const showRetry = freshness === 'stale' || !g.ok;
 
-          const freshness = g.freshness || (g.ok ? 'fresh' : 'stale');
-          const errorCode = g.error_code || (g.ok ? 'none' : 'fetch_error');
-          const badge = statusLabel(freshness, errorCode);
+        const div = document.createElement("div");
+        div.className = "card";
 
-          const div = document.createElement("div");
-          div.className = "card";
+        const valueHtml = displayCount != null
+          ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
+          : `<p class="error-msg">값 없음</p>`;
 
-          const valueHtml = displayCount != null
-            ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
-            : `<p class="error-msg">값 없음</p>`;
+        const deltaHtml = deltaText
+          ? `<div style="margin-top:8px;font-size:13px;color:var(--muted)">어제 대비 <strong style="color:var(--text)">${deltaText}</strong></div>`
+          : `<div style="margin-top:8px;font-size:12.5px;color:var(--muted)">어제 기록 없음</div>`;
 
-          const showRetry = freshness === 'stale' || !g.ok;
-
-          div.innerHTML = `
-            <div>
-              <h2>${name}</h2>
-              ${valueHtml}
+        div.innerHTML = `
+          <div>
+            <h2>${name}</h2>
+            ${valueHtml}
+            ${deltaHtml}
+          </div>
+          <div>
+            <div class="meta">
+              <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
+              <strong>출처 시각</strong> ${queryTime}<br>
+              <span style="opacity:.7">(원천 시각 미제공 → 조회 시각 사용)</span><br>
+              <strong>조회 시각</strong> ${queryTime}<br>
+              <strong>기준 시간대</strong> Asia/Seoul<br>
+              <strong>오늘</strong> ${today || '-'} · <strong>어제</strong> ${yesterday || '-'}<br>
+              <strong>상태</strong> ${freshness} / ${errorCode}
             </div>
-            <div>
-              <div class="meta">
-                <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
-                <strong>출처 시각</strong> ${queryTime}<br>
-                <span style="opacity:.7">(원천 시각 미제공 → 조회 시각 사용)</span><br>
-                <strong>조회 시각</strong> ${queryTime}<br>
-                <strong>기준 시간대</strong> Asia/Seoul<br>
-                <strong>상태</strong> ${freshness} / ${errorCode}
-              </div>
-              <span class="status ${badge.cls}">${badge.text}</span>
-              ${showRetry ? `<div><button class="retry-btn" type="button">다시 시도</button></div>` : ''}
-            </div>
-          `;
-
-          const btn = div.querySelector('.retry-btn');
-          if (btn) btn.addEventListener('click', load);
-
-          board.appendChild(div);
-
-          console.log(`[${name}] 원자료:`, g.raw);
-          console.log(`[${name}] 화면값:`, displayCount, freshness, errorCode);
-        });
-      } catch (err) {
-        board.innerHTML = `
-          <p class="error-msg">오류: ${err.message}</p>
-          <button class="retry-btn" type="button" onclick="load()">다시 시도</button>
+            <span class="status ${badge.cls}">${badge.text}</span>
+            ${showRetry ? `<div><button class="retry-btn" type="button">다시 시도</button></div>` : ''}
+          </div>
         `;
-        console.error(err);
-      }
-    }
 
-    load();
-  </script>
+        const btn = div.querySelector('.retry-btn');
+        if (btn) btn.addEventListener('click', load);
+
+        board.appendChild(div);
+      });
+    } catch (err) {
+      board.innerHTML = `
+        <p class="error-msg">오류: ${err.message}</p>
+        <button class="retry-btn" type="button" onclick="load()">다시 시도</button>
+      `;
+      console.error(err);
+    }
+  }
+
+  load();
+</script>
 </body>
 </html>
