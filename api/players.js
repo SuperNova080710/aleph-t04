@@ -196,45 +196,51 @@ export default async function handler(req, res) {
 
   // ---------- Replay 모드 (카드 3) ----------
   if (mode === 'replay') {
-    const judgment = judgeTransport(fixture);
+    if (mode === 'replay') {
+  const fixture = FIXTURES[fixtureId];
+  if (!fixture) {
+    return res.status(400).json({ error: `알 수 없는 fixture: ${fixtureId}` });
+  }
 
-let saved = false;
-let saveResult = null;
+  const judgment = judgeTransport(fixture);
 
-if (judgment.ok && fixture.payload) {
-  const p = fixture.payload;
-  saveResult = await upsertRecord({
-    appid: 0,
-    game_name: 'ALEPH Demo Index',
-    record_date: p.record_date,
-    player_count: Number(p.normalized_value),
-    source: p.source_name || 'ALEPH replay',
-    source_time: p.source_time || queriedAt
+  let saved = false;
+  let saveResult = null;
+
+  if (judgment.ok && fixture.payload) {
+    const p = fixture.payload;
+    saveResult = await upsertRecord({
+      appid: 0,
+      game_name: 'ALEPH Demo Index',
+      record_date: p.record_date,
+      player_count: Number(p.normalized_value),
+      source: p.source_name || 'ALEPH replay',
+      source_time: p.source_time || queriedAt
+    });
+    saved = saveResult.ok === true;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const records = await getRecords([
+    fixture.payload?.record_date || today,
+    getSeoulDateString(yesterday)
+  ]);
+
+  return res.status(200).json({
+    mode: 'replay',
+    fixture_id: fixtureId,
+    timezone: 'Asia/Seoul',
+    queriedAt,
+    freshness: judgment.ok ? 'fresh' : 'stale',
+    error_code: judgment.error_code,
+    saved,
+    saveResult,
+    payload: fixture.payload,
+    expected: fixture.expected,
+    records
   });
-  saved = saveResult.ok === true;
 }
-
-// 현재 저장된 기록 조회
-const yesterday = new Date();
-yesterday.setDate(yesterday.getDate() - 1);
-const records = await getRecords([
-  fixture.payload?.record_date || today,
-  getSeoulDateString(yesterday)
-]);
-
-return res.status(200).json({
-  mode: 'replay',
-  fixture_id: fixtureId,
-  timezone: 'Asia/Seoul',
-  queriedAt,
-  freshness: judgment.ok ? 'fresh' : 'stale',
-  error_code: judgment.error_code,
-  saved,
-  saveResult,
-  payload: fixture.payload,
-  expected: fixture.expected,
-  records
-});
   }
 
   // ---------- Live 모드 (실제 스팀) ----------
