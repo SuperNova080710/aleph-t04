@@ -227,61 +227,78 @@
       board.innerHTML = "";
 
       data.games.forEach(g => {
-        const name = GAME_NAMES[g.appid] || g.name || g.appid;
+  const name = GAME_NAMES[g.appid] || g.name || g.appid;
 
-        const todayRec = findRecord(data.records, g.appid, today);
-        const ydayRec = findRecord(data.records, g.appid, yesterday);
+  const todayRec = findRecord(data.records, g.appid, today);
+  const ydayRec = findRecord(data.records, g.appid, yesterday);
 
-        const displayCount = (g.ok && g.player_count != null)
-          ? g.player_count
-          : (todayRec ? todayRec.player_count : null);
+  const displayCount = (g.ok && g.player_count != null)
+    ? g.player_count
+    : (todayRec ? todayRec.player_count : null);
 
-        const ydayCount = ydayRec ? ydayRec.player_count : null;
-        const deltaText = formatDelta(displayCount, ydayCount);
+  const ydayCount = ydayRec ? ydayRec.player_count : null;
+  const deltaText = formatDelta(displayCount, ydayCount);
 
-        const freshness = g.freshness || (g.ok ? 'fresh' : 'stale');
-        const errorCode = g.error_code || (g.ok ? 'none' : 'fetch_error');
-        const badge = statusLabel(freshness, errorCode);
-        const showRetry = freshness === 'stale' || !g.ok;
+  // 출처 시각: DB에 저장된 source_time 우선
+  const sourceTimeRaw = (todayRec && todayRec.source_time)
+    ? todayRec.source_time
+    : data.queriedAt;
+  const sourceTime = new Date(sourceTimeRaw).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul"
+  });
 
-        const div = document.createElement("div");
-        div.className = "card";
-        div.tabIndex = 0;
+  const queryTime = new Date(data.queriedAt).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul"
+  });
 
-        const valueHtml = displayCount != null
-          ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
-          : `<p class="error-msg">값 없음</p>`;
+  const freshness = g.freshness || (g.ok ? 'fresh' : 'stale');
+  const errorCode = g.error_code || (g.ok ? 'none' : 'fetch_error');
+  const badge = statusLabel(freshness, errorCode);
+  const showRetry = freshness === 'stale' || !g.ok;
 
-        const deltaHtml = deltaText
-          ? `<div style="margin-top:8px;font-size:13px;color:var(--muted)">어제 대비 <strong style="color:var(--text)">${deltaText}</strong></div>`
-          : `<div style="margin-top:8px;font-size:12.5px;color:var(--muted)">어제 기록 없음</div>`;
+  const div = document.createElement("div");
+  div.className = "card";
+  div.tabIndex = 0;
 
-        div.innerHTML = `
-          <div>
-            <h2>${name}</h2>
-            ${valueHtml}
-            ${deltaHtml}
-          </div>
-          <div>
-            <div class="meta">
-              <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
-              <strong>출처 시각</strong> ${queryTime}<br>
-              <span style="opacity:.7">(원천 시각 미제공 → 조회 시각 사용)</span><br>
-              <strong>조회 시각</strong> ${queryTime}<br>
-              <strong>기준 시간대</strong> Asia/Seoul<br>
-              <strong>오늘</strong> ${today || '-'} · <strong>어제</strong> ${yesterday || '-'}<br>
-              <strong>상태</strong> ${freshness} / ${errorCode}
-            </div>
-            <span class="status ${badge.cls}">${badge.text}</span>
-            ${showRetry ? `<div><button class="retry-btn" type="button">다시 시도</button></div>` : ''}
-          </div>
-        `;
+  const valueHtml = displayCount != null
+    ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
+    : `<p class="error-msg">값 없음</p>`;
 
-        const btn = div.querySelector('.retry-btn');
-        if (btn) btn.addEventListener('click', load);
+  const ydayHtml = ydayCount != null
+    ? `<div style="margin-top:8px;font-size:13px;color:var(--muted)">어제 <strong style="color:var(--text)">${Number(ydayCount).toLocaleString()}명</strong></div>`
+    : `<div style="margin-top:8px;font-size:12.5px;color:var(--muted)">어제 기록 없음</div>`;
 
-        board.appendChild(div);
-      });
+  const deltaHtml = deltaText
+    ? `<div style="margin-top:4px;font-size:13px;color:var(--muted)">어제 대비 <strong style="color:var(--text)">${deltaText}</strong></div>`
+    : '';
+
+  div.innerHTML = `
+    <div>
+      <h2>${name}</h2>
+      ${valueHtml}
+      ${ydayHtml}
+      ${deltaHtml}
+    </div>
+    <div>
+      <div class="meta">
+        <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
+        <strong>출처 시각</strong> ${sourceTime}<br>
+        <span style="opacity:.7">(원천 시각 미제공 → 저장 시각 사용)</span><br>
+        <strong>조회 시각</strong> ${queryTime}<br>
+        <strong>기준 시간대</strong> Asia/Seoul<br>
+        <strong>오늘</strong> ${today || '-'} · <strong>어제</strong> ${yesterday || '-'}<br>
+        <strong>상태</strong> ${freshness} / ${errorCode}
+      </div>
+      <span class="status ${badge.cls}">${badge.text}</span>
+      ${showRetry ? `<div><button class="retry-btn" type="button">다시 시도</button></div>` : ''}
+    </div>
+  `;
+
+  const btn = div.querySelector('.retry-btn');
+  if (btn) btn.addEventListener('click', load);
+
+  board.appendChild(div);
+});
     } catch (err) {
       board.innerHTML = `
         <p class="error-msg">오류: ${err.message}</p>
