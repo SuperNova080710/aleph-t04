@@ -13,29 +13,23 @@
       --muted: #9aa0a6;
       --accent: #7aa2f7;
       --success: #9ece6a;
+      --warn: #e0af68;
       --error: #f7768e;
       --radius: 14px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
+    html, body { height: 100%; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif;
       background: var(--bg);
       color: var(--text);
       display: flex;
       flex-direction: column;
-      align-items: center;          /* 가로 중앙 */
-      justify-content: center;      /* 세로 중앙 */
+      align-items: center;
+      justify-content: center;
       padding: 20px;
       line-height: 1.5;
     }
-
     .wrap {
       width: 100%;
       max-width: 960px;
@@ -44,22 +38,14 @@
       align-items: center;
       gap: 20px;
     }
-
-    header {
-      text-align: center;
-    }
-
+    header { text-align: center; }
     h1 {
       font-size: clamp(20px, 2.6vw, 26px);
       font-weight: 700;
       letter-spacing: -0.02em;
       margin-bottom: 6px;
     }
-
-    .header-meta {
-      font-size: 13.5px;
-      color: var(--muted);
-    }
+    .header-meta { font-size: 13.5px; color: var(--muted); }
 
     #board {
       width: 100%;
@@ -67,120 +53,97 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
     }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 22px 18px 18px;
-      text-align: center;           /* 카드 안 텍스트 중앙 */
+      text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      min-height: 210px;
+      min-height: 230px;
     }
-
     .card h2 {
       font-size: 14.5px;
       font-weight: 600;
       color: var(--muted);
       margin-bottom: 12px;
-      letter-spacing: -0.01em;
     }
-
     .value {
       font-size: clamp(28px, 4vw, 38px);
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
-      color: var(--text);
     }
-
     .value small {
       font-size: 0.42em;
       font-weight: 500;
       color: var(--muted);
       margin-left: 3px;
     }
-
     .meta {
-      margin-top: 16px;
+      margin-top: 14px;
       font-size: 12.5px;
       color: var(--muted);
       line-height: 1.6;
-      text-align: center;
     }
-
-    .meta strong {
-      color: var(--text);
-      font-weight: 500;
-    }
+    .meta strong { color: var(--text); font-weight: 500; }
 
     .status {
       display: inline-block;
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: 11.5px;
       font-weight: 600;
       padding: 3px 10px;
       border-radius: 999px;
+    }
+    .status.fresh {
       background: rgba(154, 206, 106, 0.15);
       color: var(--success);
     }
-
+    .status.stale {
+      background: rgba(224, 175, 104, 0.18);
+      color: var(--warn);
+    }
     .status.error {
       background: rgba(247, 118, 142, 0.15);
       color: var(--error);
     }
 
-    .error-msg {
-      color: var(--error);
-      font-size: 14px;
-      margin-top: 8px;
+    .retry-btn {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 12.5px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .retry-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
-    /* 태블릿 */
+    .error-msg { color: var(--error); font-size: 14px; margin-top: 8px; }
+
     @media (max-width: 900px) {
-      #board {
-        grid-template-columns: 1fr 1fr;
-      }
-      #board .card:last-child {
-        grid-column: 1 / -1;
-      }
-      .card {
-        min-height: 190px;
-      }
+      #board { grid-template-columns: 1fr 1fr; }
+      #board .card:last-child { grid-column: 1 / -1; }
     }
-
-    /* 모바일 */
     @media (max-width: 560px) {
       body { padding: 14px; }
-      #board {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      #board .card:last-child {
-        grid-column: auto;
-      }
-      .card {
-        min-height: auto;
-        padding: 18px 16px;
-      }
-      .value { font-size: 30px; }
-      .meta { font-size: 12px; }
+      #board { grid-template-columns: 1fr; gap: 12px; }
+      #board .card:last-child { grid-column: auto; }
+      .card { min-height: auto; }
     }
-
-    /* 낮은 화면 */
     @media (max-height: 640px) {
       body { padding: 12px; }
       .wrap { gap: 12px; }
-      .card {
-        min-height: 160px;
-        padding: 14px 14px 12px;
-      }
+      .card { min-height: 160px; padding: 14px; }
       .value { font-size: 26px; }
-      .meta { margin-top: 10px; font-size: 11.5px; }
-      .status { margin-top: 8px; }
     }
   </style>
 </head>
@@ -190,7 +153,6 @@
       <h1>오늘의 스팀 동접자 정보판</h1>
       <div class="header-meta">기준 시간대 · Asia/Seoul</div>
     </header>
-
     <div id="board">불러오는 중...</div>
   </div>
 
@@ -201,8 +163,24 @@
       578080: "PUBG"
     };
 
+    function findLastRecord(records, appid) {
+      if (!Array.isArray(records)) return null;
+      return records.find(r => Number(r.appid) === Number(appid)) || null;
+    }
+
+    function statusLabel(freshness, errorCode) {
+      if (freshness === 'fresh' && errorCode === 'none') return { text: '정상 · fresh', cls: 'fresh' };
+      if (freshness === 'stale') {
+        const code = errorCode && errorCode !== 'none' ? errorCode : 'stale';
+        return { text: `오래된 값 · ${code}`, cls: 'stale' };
+      }
+      return { text: `실패 · ${errorCode || 'error'}`, cls: 'error' };
+    }
+
     async function load() {
       const board = document.getElementById("board");
+      board.innerHTML = "불러오는 중...";
+
       try {
         const res = await fetch("/api/players");
         if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
@@ -213,46 +191,61 @@
         });
 
         board.innerHTML = "";
+
         data.games.forEach(g => {
-          const name = GAME_NAMES[g.appid] || g.appid;
+          const name = GAME_NAMES[g.appid] || g.name || g.appid;
+          const last = findLastRecord(data.records, g.appid);
+
+          // 실패 시에도 마지막 정상값이 있으면 보여 줌 (stale)
+          const displayCount = g.ok && g.player_count != null
+            ? g.player_count
+            : (last ? last.player_count : null);
+
+          const freshness = g.freshness || (g.ok ? 'fresh' : 'stale');
+          const errorCode = g.error_code || (g.ok ? 'none' : 'fetch_error');
+          const badge = statusLabel(freshness, errorCode);
+
           const div = document.createElement("div");
           div.className = "card";
 
-          if (!g.ok) {
-            div.innerHTML = `
+          const valueHtml = displayCount != null
+            ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
+            : `<p class="error-msg">값 없음</p>`;
+
+          const showRetry = freshness === 'stale' || !g.ok;
+
+          div.innerHTML = `
+            <div>
               <h2>${name}</h2>
-              <p class="error-msg">조회 실패 (status: ${g.status})</p>
+              ${valueHtml}
+            </div>
+            <div>
               <div class="meta">
-                출처: Steam Web API (AppID ${g.appid})<br>
-                조회 시각: ${queryTime}
+                <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
+                <strong>출처 시각</strong> ${queryTime}<br>
+                <span style="opacity:.7">(원천 시각 미제공 → 조회 시각 사용)</span><br>
+                <strong>조회 시각</strong> ${queryTime}<br>
+                <strong>기준 시간대</strong> Asia/Seoul<br>
+                <strong>상태</strong> ${freshness} / ${errorCode}
               </div>
-              <span class="status error">실패</span>
-            `;
-          } else {
-            div.innerHTML = `
-              <div>
-                <h2>${name}</h2>
-                <div class="value">${Number(g.player_count).toLocaleString()}<small>명</small></div>
-              </div>
-              <div>
-                <div class="meta">
-                  <strong>출처</strong> Steam Web API (AppID ${g.appid})<br>
-                  <strong>출처 시각</strong> ${queryTime}<br>
-                  <span style="opacity:.7">(원천 시각 미제공 → 조회 시각 사용)</span><br>
-                  <strong>조회 시각</strong> ${queryTime}<br>
-                  <strong>기준 시간대</strong> Asia/Seoul
-                </div>
-                <span class="status">정상</span>
-              </div>
-            `;
-          }
+              <span class="status ${badge.cls}">${badge.text}</span>
+              ${showRetry ? `<div><button class="retry-btn" type="button">다시 시도</button></div>` : ''}
+            </div>
+          `;
+
+          const btn = div.querySelector('.retry-btn');
+          if (btn) btn.addEventListener('click', load);
+
           board.appendChild(div);
 
           console.log(`[${name}] 원자료:`, g.raw);
-          console.log(`[${name}] 화면값:`, g.player_count);
+          console.log(`[${name}] 화면값:`, displayCount, freshness, errorCode);
         });
       } catch (err) {
-        board.innerHTML = `<p class="error-msg">오류: ${err.message}</p>`;
+        board.innerHTML = `
+          <p class="error-msg">오류: ${err.message}</p>
+          <button class="retry-btn" type="button" onclick="load()">다시 시도</button>
+        `;
         console.error(err);
       }
     }
