@@ -54,6 +54,20 @@
       gap: 16px;
     }
     .card {
+      /* 기존 스타일 유지 */  
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      outline: none;
+    }
+    
+    .card:hover,
+    .card:focus-within {
+      transform: scale(1.03);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.35),
+                  0 12px 28px rgba(0, 0, 0, 0.35);
+      z-index: 1;
+    }
+    .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -232,6 +246,7 @@
 
         const div = document.createElement("div");
         div.className = "card";
+        div.tabIndex = 0;
 
         const valueHtml = displayCount != null
           ? `<div class="value">${Number(displayCount).toLocaleString()}<small>명</small></div>`
